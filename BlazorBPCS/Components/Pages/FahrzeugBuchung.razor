@@ -1,0 +1,196 @@
+﻿@page "/Buchungen"
+@using BlazorBPCS.Services
+@inject ILocationService LocationService
+@using System.Globalization
+@using Microsoft.AspNetCore.Components.Forms
+@rendermode InteractiveServer
+@using DataModels
+
+<PageTitle>Fahrzeug Buchung</PageTitle>
+
+<h3>Neue Buchung</h3>
+
+<label>City:</label>
+<select @bind="selectedCity">
+    <option value="">-- Select a city --</option>
+
+    @if (locations == null)
+    {
+        <option>Loading...</option>
+    }
+    else
+    {
+        @foreach (var city in locations)
+        {
+            <option value="@city">@city</option>
+        }
+    }
+    
+</select>
+
+<br />
+<br />
+
+<label>Von Datum:</label>
+<input type="date" 
+       min="@DateTime.Today.ToString("yyyy-MM-dd")"
+       value="@startDate.ToString("yyyy-MM-dd")" 
+       @onchange="OnStartDateChanged" />
+
+<br />
+<br />
+
+<label>Bis Datum:</label>
+<input type="date"
+       min="@DateTime.Today.ToString("yyyy-MM-dd")" 
+       @bind="endDate" />
+
+<br />
+<br />
+
+<button class="btn btn-FindCar" style="background-color: purple; color: white;" @onclick="ConfirmBooking">Suchen mir eine Auto</button>
+
+<br />
+<br />
+
+@if (vehicles == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Manufacturer</th>
+                <th>Model</th>
+                <th>Daily Rental Rate</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var v in vehicles)
+            {
+                <tr>
+                    <td>@v.Manufacturer</td>
+                    <td>@v.Model</td>
+                    <td>@v.DailyRate.ToString("C")</td>
+                    <td>
+                        <button class="btn btn-primary"
+                                @onclick="() => ShowBookingPanel(v)">
+                            Book
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<br />
+<br />
+
+@if (BookingPanelVisible)
+{
+    <label for="customerName">Vorname</label>
+    <input id="customerName" type="text" @bind="CustomerName" placeholder="Vorname" class="form-control" />
+
+    <label for="customerSurname">Nachname</label>
+    <input id="customerSurname" type="text" @bind="CustomerSurname" placeholder="Nachname" class="form-control" />
+
+    <label for="customerEmail">E-mail</label>
+    <input id="customerEmail" type="text" @bind="CustomerEmail" placeholder="E-mail" class="form-control" />
+
+    <label for="customerPhone">Telefon</label>
+    <input id="customerPhone" type="text" @bind="CustomerPhone" placeholder="Telefon" class="form-control" />
+
+    <label for="customerAddress">Anschrifft</label>
+    <input id="customerAddress" type="text" @bind="CustomerAddress" placeholder="Anschrifft" class="form-control" />
+
+    <br />
+    <br />
+
+    <button class="btn btn-BookCar" style="background-color: purple; color: white;" @onclick="BookVehicle">Auto Buchen</button>
+}
+
+
+@code {
+    private List<string>? locations;
+    private List<VehicleInfo>? vehicles;
+
+    private string? selectedCity;
+    private DateTime startDate = DateTime.Now;
+    private DateTime endDate = DateTime.Now.AddDays(1);
+
+    private VehicleInfo? selectedVehicle;
+
+    private Boolean BookingPanelVisible = false;
+
+    private string? CustomerName;
+    private string? CustomerSurname;
+    private string? CustomerPhone;
+    private string? CustomerAddress;
+    private string? CustomerEmail;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        locations = await LocationService.GetLocationsAsync();
+    }
+
+    private void OnStartDateChanged(ChangeEventArgs e)
+    {
+        var value = e?.Value?.ToString();
+        if (DateTime.TryParseExact(value ?? string.Empty,
+                                   "yyyy-MM-dd",
+                                   CultureInfo.InvariantCulture,
+                                   DateTimeStyles.None,
+                                   out var parsed))
+        {
+            startDate = parsed;
+            endDate = startDate.AddDays(1);
+            StateHasChanged(); // ensures UI updates immediately
+        }
+    }
+
+    private async Task ConfirmBooking()
+    {
+        vehicles = await LocationService.GetVehiclesForLocation(selectedCity);
+    }
+
+    private async void BookVehicle()
+    {
+        Booking booking = new();
+
+        if (selectedVehicle != null)
+        {
+            booking.LocationID = selectedVehicle.LocationID;
+            booking.VehicleReg = selectedVehicle.Registration;
+            booking.BookingRate = selectedVehicle.DailyRate;
+
+            booking.CustomerName = CustomerName;
+            booking.CustomerSurname = CustomerSurname;
+            booking.CustomerEmail = CustomerEmail;
+            booking.CustomerPhone = CustomerPhone;
+            booking.Address = CustomerAddress;
+
+            booking.StartDate = startDate;
+            booking.EndDate = endDate;
+        }
+
+        var response = await LocationService.Sendbooking(booking);
+
+        if (response.IsSuccessStatusCode)
+        {
+            // Need to see how I can display the booking code
+            //response.
+        }
+    }
+
+    private void ShowBookingPanel(VehicleInfo vehicleInfo)
+    {
+        selectedVehicle = vehicleInfo;
+
+        BookingPanelVisible = true;
+    }
+}

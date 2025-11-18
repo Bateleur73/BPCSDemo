@@ -1,0 +1,66 @@
+﻿@page "/MeineBuchungen"
+@rendermode InteractiveServer
+@using BlazorBPCS.Services
+@inject ILocationService LocationService
+@using DataModels
+
+
+<PageTitle>Meine Buchungen</PageTitle>
+
+<h3>Meine Buchungen</h3>
+
+@if (myBookings == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Buchung Nummer</th>
+                <th>Ort ID</th>
+                <th>Vorname</th>
+                <th>Nachname</th>
+                <th>Telefon</th>
+                <th>Email</th>
+                <th>Anschrift</th>
+                <th>Buchungs Rate</th>
+                <th>Start Datum</th>
+                <th>Ende Datum</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var v in myBookings)
+            {
+                <tr>
+                    <td>@v.BookingCode</td>
+                    <td>@v.LocationID</td>
+                    <td>@v.CustomerName</td>
+                    <td>@v.CustomerSurname</td>
+                    <td>@v.CustomerPhone</td>
+                    <td>@v.CustomerEmail</td>
+                    <td>@v.Address</td>
+                    <td>@v.BookingRate.ToString("C")</td>
+                    <td>@v.StartDate</td>
+                    <td>@v.EndDate</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<br />
+<br />
+
+
+
+@code {
+    private List<Booking>? myBookings;
+
+    protected override async Task OnInitializedAsync()
+    {
+        myBookings = await LocationService.GetMyBookings();
+    }
+
+}

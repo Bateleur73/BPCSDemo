@@ -1,0 +1,6 @@
+@DemoBPCSWebAPI_HostAddress = http://localhost:5047
+
+GET {{DemoBPCSWebAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
